@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Astronomy - Clean</title>
+    <style>
+        body { margin: 0; background: #050505; color: white; font-family: sans-serif; overflow: hidden; }
+        canvas { display: block; }
+        #ui-bar { position: absolute; top: 10px; left: 10px; display: flex; gap: 10px; z-index: 10; }
+        button { background: #333; color: white; border: 1px solid #555; padding: 10px; cursor: pointer; }
+        button:hover { background: #444; }
+    </style>
+</head>
+<body>
+
+<div id="ui-bar">
+    <div id="spawn-container">
+        <select id="object-select">
+            <option value="asteroid">Rock Particle</option>
+            <option value="planet">Planet Cluster</option>
+            <option value="core">Heavy Core</option>
+            <option value="hydrogen">Hydrogen Gas</option>
+            <option value="helium">Helium Gas</option>
+            <option value="oxygen">Oxygen Gas</option>
+            <option value="star_material">Star Material</option>
+            <option value="nebula_dust">Nebula Dust</option>
+            <option value="gas_giant_material">Gas Giant Material</option>
+        </select>
+        
+        <select id="brush-select">
+            <option value="singular">Singular</option>
+            <option value="square">Square Brush</option>
+            <option value="circle">Circle Brush</option>
+            <option value="random">Random Spray</option>
+        </select>
+
+        <button onclick="enablePlacement()">Start Placement</button>
+        <button id="pause-btn" onclick="togglePause()">Pause</button>
+        <button onclick="window.particles = []">Clear Screen</button>
+    </div>
+</div>
+
+<button id="cancel-spawn-btn" onclick="exitPlacementMode()" style="display:none; position:fixed; bottom:20px; left:20px;">
+    Exit Placement Mode -
+</button>
+
+<canvas id="spaceCanvas"></canvas>
+
+<script src="simulation.js"></script>
+<script src="gravity.js"></script>
+<script src="camera.js"></script>
+<script src="temperature.js"></script>
+<script src="supernova.js"></script>
+<script src="menu.js"></script>
+<script src="collisions.js"></script>
+<script src="elementReaction.js"></script>
+</body>
+</html>
