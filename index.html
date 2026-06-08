@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple Astronomy - Clean</title>
+    <style>
+        body { margin: 0; background: #050505; color: white; font-family: sans-serif; overflow: hidden; }
+        canvas { display: block; }
+        #ui-bar { position: absolute; top: 10px; left: 10px; display: flex; gap: 10px; z-index: 10; }
+        button { background: #333; color: white; border: 1px solid #555; padding: 10px; cursor: pointer; }
+        button:hover { background: #444; }
+        #settings-btn {
+    background-color: #4b5563;
+    color: #ffffff;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s ease;
+}
+
+#settings-btn:hover {
+    background-color: #6b7280;
+}
+
+#settings-panel {
+    position: absolute;
+    top: 70px;
+    right: 20px;
+    width: 280px;
+    background-color: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 8px;
+    padding: 16px;
+    color: #ffffff;
+    font-family: sans-serif;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+}
+
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.settings-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #38bdf8;
+}
+
+.close-panel-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.close-panel-btn:hover {
+    color: #ffffff;
+}
+
+.panel-divider {
+    border: 0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 12px 0;
+}
+
+.switch-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.setting-desc {
+    margin: 6px 0 0 24px;
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.4;
+}
+    </style>
+</head>
+<body>
+
+<div id="ui-bar">
+    <div id="spawn-container">
+        <select id="object-select">
+            <option value="asteroid">Rock Particle</option>
+            <option value="planet">Planet Cluster</option>
+            <option value="core">Heavy Core</option>
+            <option value="hydrogen">Hydrogen Gas</option>
+            <option value="helium">Helium Gas</option>
+            <option value="oxygen">Oxygen Gas</option>
+            <option value="star_material">Star Material</option>
+            <option value="nebula_dust">Nebula Dust</option>
+            <option value="gas_giant_material">Gas Giant Material</option>
+            <option value="water">Water</option>
+            <option value="ice">Ice</option>
+            <option value="plant">Plant Life</option>
+        </select>
+        
+        <select id="brush-select">
+            <option value="singular">Singular</option>
+            <option value="square">Square Brush</option>
+            <option value="circle">Circle Brush</option>
+            <option value="random">Random Spray</option>
+        </select>
+
+        <button onclick="enablePlacement()">Start Placement</button>
+        <button id="pause-btn" onclick="togglePause()">Pause</button>
+        <button onclick="window.particles = []">Clear Screen</button>
+    </div>
+    <button id="settings-btn" onclick="toggleSettingsMenu()">⚙️ Settings</button>
+</div>
+
+<div id="settings-panel" style="display: none;">
+    <div class="settings-header">
+        <h3>Simulation Parameters</h3>
+        <button class="close-panel-btn" onclick="toggleSettingsMenu()">×</button>
+    </div>
+    <hr class="panel-divider">
+    <div class="setting-item">
+        <label for="decay-toggle" class="switch-label">
+            <input type="checkbox" id="decay-toggle" onchange="toggleOrbitalDecay(this.checked)">
+            <span class="custom-slider"></span>
+            Enable Orbital Decay
+        </label>
+        <p class="setting-desc">Applies a drag force over time, slowly degrading orbits toward massive central planetary bodies.</p>
+    </div>
+</div>
+
+<button id="cancel-spawn-btn" onclick="exitPlacementMode()" style="display:none; position:fixed; bottom:20px; left:20px;">
+    Exit Placement Mode -
+</button>
+
+<canvas id="spaceCanvas"></canvas>
+
+<script src="groupId.js"></script>
+<script src="space_objectsMenu.js"></script>
+<script src="planetaryEcology.js"></script>
+<script src="simulation.js"></script>
+<script src="gravity.js"></script>
+<script src="camera.js"></script>
+<script src="temperature.js"></script>
+<script src="supernova.js"></script>
+<script src="menu.js"></script>
+<script src="collisions.js"></script>
+<script src="elementReaction.js"></script>
+</body>
+</html>
