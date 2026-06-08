@@ -7,6 +7,8 @@ window.particles = [];
 window.isPaused = true;
 window.placingEnabled = false;
 window.isDrawing = false;
+window.orbitalDecayEnabled = false; // Turned off by default
+window.orbitalDecayFactor = 0.9993; // The precise atmospheric drag resistance rate
 
 class Particle {
     constructor(x, y, vx, vy, type = 'rock') {
@@ -15,6 +17,7 @@ class Particle {
         this.type = type;
         this.temp = 0;
         this.neighbors = 0;
+        this.groupId = null; // Instantiated clean grouping ID parameter
 
         // --- AGING & SUPERNOVA TRACKERS ---
         this.spawnTime = Date.now(); // Tracks exactly when this particle was born
@@ -27,6 +30,18 @@ class Particle {
             this.mass = 50;
             this.radius = 12;
             this.isCore = true;
+        } else if (type === 'water') {
+            this.mass = 0.8;   // Slightly lighter than rock, flows smoothly
+            this.radius = 4;
+            this.isCore = false;
+        } else if (type === 'ice') {
+            this.mass = 0.7;   // Frozen water expands slightly
+            this.radius = 4.5;
+            this.isCore = false;
+        } else if (type === 'plant') {
+            this.mass = 1.2;   // Organic matter anchored to structures
+            this.radius = 4.5;
+            this.isCore = false;
         } else if (type === 'hydrogen') {
             this.mass = 0.2;   // Super light gas
             this.radius = 4;
@@ -68,41 +83,42 @@ class Particle {
         // Custom Cosmic Color Profiles
         if (this.type === 'core') {
             this.color = '#ff9900';
+        } else if (this.type === 'water') {
+            // Beautiful fluid deep sea blue that brightens slightly when heated
+            this.color = `rgb(${40 + intensity * 0.2}, ${100 + intensity * 0.4}, ${255})`;
+        } else if (this.type === 'ice') {
+            // Cold, frosty cyan-white crystalline sheen
+            this.color = `rgb(${200 + intensity * 0.2}, ${240}, ${255})`;
+        } else if (this.type === 'plant') {
+            // Rich biological chlorophyll green 
+            this.color = `rgb(${60}, ${180 + intensity * 0.3}, ${70})`;
         } else if (this.type === 'hydrogen') {
-            // Light lavender/violet glow typical of energized hydrogen gas
             this.color = `rgb(${180 + intensity * 0.3}, ${140}, ${255})`;
         } else if (this.type === 'helium') {
-            // Warm orange-pink glow characteristic of helium discharge
             this.color = `rgb(${255}, ${160 + intensity * 0.3}, ${120})`;
         } else if (this.type === 'nebula_dust') {
             this.color = `rgb(${80 + intensity * 0.2}, ${220}, ${140})`; // Emerald space mist
         } else if (this.type === 'gas_giant_material') {
             this.color = `rgb(${220}, ${160}, ${90 + intensity * 0.3})`; // Striped gas giant beige
         } else if (this.type === 'oxygen') {
-            // Pale cool sky blue / soft red-tinted glow when excited
             this.color = `rgb(${130 + intensity}, ${200}, ${255})`;
         } else if (this.type === 'star_material') {
-            let age = (Date.now() - this.spawnTime) / 1000; // Get age in seconds
+            let age = (Date.now() - this.spawnTime) / 1000;
 
             if (age >= 60) {
-                // If it hasn't picked an aging color variant yet, pick one permanently
                 if (!this.starColorState) {
                     this.starColorState = Math.random() > 0.5 ? 'red' : 'blue';
                 }
 
                 if (this.starColorState === 'red') {
-                    // Blazing older Red Supergiant glow
                     this.color = `rgb(${255}, ${50 + intensity * 0.2}, ${50})`;
                 } else {
-                    // Hot, energetic older Blue Hypergiant glow
                     this.color = `rgb(${80}, ${150 + intensity * 0.3}, ${255})`;
                 }
             } else {
-                // Your beautiful classic newborn star color
                 this.color = `rgb(${255}, ${220 + intensity}, ${100 + intensity * 0.5})`;
             }
         } else { 
-            // Classic rock profile
             this.color = `rgb(${100 + intensity}, ${100 - intensity}, ${100 - intensity})`;
         }
 
@@ -123,7 +139,7 @@ function spawnParticlePlanet(cx, cy, total) {
     for (let i = 0; i < total; i++) {
         let angle = Math.random() * Math.PI * 2;
         let offset = Math.random() * 8; 
-        window.particles.push(new Particle(cx + Math.cos(angle) * offset, cy + Math.sin(angle) * offset, 0, 0, 1.0));
+        window.particles.push(new Particle(cx + Math.cos(angle) * offset, cy + Math.sin(angle) * offset, 0, 0, 'rock'));
     }
 }
 
@@ -134,7 +150,7 @@ function spawnEntity(x, y, type) {
         spawnParticlePlanet(x, y, 15);
     } else if (type === 'core') {
         window.particles.push(new Particle(x, y, 0, 0, 'core'));
-    } else if (['hydrogen', 'helium', 'oxygen', 'star_material', 'nebula_dust', 'gas_giant_material'].includes(type)) {
+    } else if (['hydrogen', 'helium', 'oxygen', 'star_material', 'nebula_dust', 'gas_giant_material', 'water', 'ice', 'plant'].includes(type)) {
         window.particles.push(new Particle(x, y, 0, 0, type));
     }
 }
@@ -173,49 +189,58 @@ function togglePause() {
     document.getElementById('pause-btn').innerText = window.isPaused ? 'Resume' : 'Pause';
 }
 
+function toggleSettingsMenu() {
+    const panel = document.getElementById('settings-panel');
+    if (panel) {
+        panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+function toggleOrbitalDecay(isEnabled) {
+    window.orbitalDecayEnabled = isEnabled;
+    console.log("Orbital decay system status:", window.orbitalDecayEnabled);
+}
+
+// Mount declarations safely globally
+window.toggleSettingsMenu = toggleSettingsMenu;
+window.toggleOrbitalDecay = toggleOrbitalDecay;
+
 function processStellarAging() {
     let now = Date.now();
 
     for (let i = 0; i < window.particles.length; i++) {
         let p = window.particles[i];
 
-        // Handle active star material aging pipelines
         if (p.type === 'star_material' && !p.isExploded) {
             let ageInSeconds = (now - p.spawnTime) / 1000;
 
-            // 75 seconds total (60s normal + 15s colored phase) = SUPERNOVA!
             if (ageInSeconds >= 75) {
                 p.isExploded = true;
                 p.explosionTimer = now;
 
-                // Roll a random gas type for the post-supernova element decay
                 let roll = Math.random();
-                if (roll < 0.5) p.type = 'hydrogen';       // 50% Hydrogen
-                else if (roll < 0.8) p.type = 'helium';    // 30% Helium
-                else p.type = 'oxygen';                     // 20% Oxygen
+                if (roll < 0.5) p.type = 'hydrogen';
+                else if (roll < 0.8) p.type = 'helium';
+                else p.type = 'oxygen';
 
-                // Re-adjust physical attributes back to the new gas element properties
                 if (p.type === 'hydrogen') { p.mass = 0.2; p.radius = 4; }
                 else if (p.type === 'helium') { p.mass = 0.4; p.radius = 4; }
                 else { p.mass = 1.4; p.radius = 5; }
 
-                // Give it an intense explosive outward blast vector
                 let blastAngle = Math.random() * Math.PI * 2;
-                let blastSpeed = 3.0 + Math.random() * 4.0; // High velocity explosion
+                let blastSpeed = 3.0 + Math.random() * 4.0;
                 p.vx = Math.cos(blastAngle) * blastSpeed;
                 p.vy = Math.sin(blastAngle) * blastSpeed;
             }
         }
 
-        // Handle the 3-second post-explosion blast phase
         if (p.isExploded) {
             let timeExploding = (now - p.explosionTimer) / 1000;
 
             if (timeExploding >= 3.0) {
-                // 3 seconds are up! Freeze the particle in space so it stops spreading
                 p.vx = 0;
                 p.vy = 0;
-                p.isExploded = false; // Turn off tracker so standard gravity takes back over
+                p.isExploded = false;
             }
         }
     }
@@ -232,31 +257,46 @@ canvas.addEventListener('mousemove', (e) => {
     if (Math.random() > 0.8) spawnBrush(spawnX, spawnY);
 });
 
+// INITIALIZE INTERFACE HOOKS OUTSIDE THE ANIMATE TICK LOOP LOOP
+if (typeof window.initSpaceObjectsMenu === 'function') {
+    window.initSpaceObjectsMenu();
+}
+
 function animate() {
     ctx.fillStyle = 'rgba(5, 5, 5, 0.2)';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // Only update physics, aging, and positions when NOT paused
     if (!window.isPaused) {
-        // Runs the lifecycle tracker from supernova.js
+        if (typeof window.updateObjectGroupIds === 'function') window.updateObjectGroupIds();
         if (typeof processStellarAging === 'function') processStellarAging();
-        if (typeof window.handleElementReactions === 'function') window.handleElementReactions(); // Added right here!
+        if (typeof window.handleElementReactions === 'function') window.handleElementReactions();
 
-        // Runs your universal forces and crystal lattice collisions
         if (typeof calculatePhysics === 'function') calculatePhysics(16.6);
         if (typeof handleCollisions === 'function') handleCollisions();
         
         // Apply the finalized velocities to update positions cleanly
-        window.particles.forEach(p => {
-            p.x += p.vx; 
-            p.y += p.vy;
-        });
+     window.particles.forEach(p => {
+         // --- NEW ORBITS UPDATE FEATURE: OPTIONAL SPACE DRAG DECAY ---
+         if (window.orbitalDecayEnabled && p.type !== 'core') {
+             // Core elements remain anchor focal points, other bodies experience drag friction
+             p.vx *= window.orbitalDecayFactor;
+             p.vy *= window.orbitalDecayFactor;
+         }
+
+         p.x += p.vx; 
+         p.y += p.vy;
+     });
     }
 
-    // Always draw your elements so they stay visible when paused
+    // LAYER 1: Always draw particles first
     window.particles.forEach(p => {
         p.draw(ctx);
     });
+    
+    // LAYER 2: Draw HUD overlays/arrows last so they render clearly on top of clusters
+    if (typeof window.drawSpaceObjectsMenu === 'function') {
+        window.drawSpaceObjectsMenu(ctx);
+    }
     
     requestAnimationFrame(animate);
 }
